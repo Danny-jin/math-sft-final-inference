@@ -7,7 +7,7 @@ sets intersect (any one key in common).
 
 `vote_all(sc_jsonl_path)` reads {id, type, samples=[k strings]} rows and
 returns dict {id: voted_response_string}. The voted string is wrapped with
-`\\boxed{...}` so eval_dev can score it with score_row additive.
+`\\boxed{...}` so downstream CSV writing can store a single final answer.
 
 Voting strategy:
   - MCQ: extract letter from each sample, take majority.
@@ -27,11 +27,21 @@ from postprocess import (extract_mcq_answer, extract_ff_merged,
 
 # ─── canon_ff_v2 ───────────────────────────────────────────────────────
 
+_JUDGER = None
+
+
+def _get_judger():
+    global _JUDGER
+    if _JUDGER is None:
+        from judger import Judger
+        _JUDGER = Judger()
+    return _JUDGER
+
+
 def _norm_math(s: str) -> str | None:
     """Try judger.norm_math_str(s); return None on any error/empty."""
     try:
-        from judger import Judger
-        J = Judger()
+        J = _get_judger()
         # Both module-level helper and method names have been seen; try both
         for fn_name in ("norm_math_str", "_norm_math_str", "normalize"):
             fn = getattr(J, fn_name, None)
@@ -203,8 +213,7 @@ def _vote_ff_single_strs(answers: list[str]) -> str:
 # ─── public API ────────────────────────────────────────────────────────
 
 def vote_one(samples: list[str], qtype: str) -> str:
-    """Vote across k samples for one question; return a `\\boxed{...}` response
-    suitable for postprocess.score_row."""
+    """Vote across k samples and return one ``\\boxed{...}`` response."""
     if qtype == "mcq":
         letter = _vote_mcq(samples)
         return f"\\boxed{{{letter}}}"
@@ -229,8 +238,7 @@ def vote_all(sc_input) -> dict:
     """Read SC inference output and produce {id: voted_response_string}.
 
     Accepts either a path to a JSONL file (one {id,type,samples} per line)
-    or an in-memory list of such row dicts. The list form is what
-    `eval_lora_sc.py` actually passes after generation.
+    or an in-memory list of such row dicts.
     """
     if isinstance(sc_input, (list, tuple)):
         rows = sc_input
