@@ -28,7 +28,12 @@ least 100GB disk. Approximate final inference time is 6-8 hours on this GPU.
 Verification does not require rerunning training; the final A17 LoRA adapter is
 loaded from HuggingFace Hub.
 
-From a fresh Vast.ai instance created with the template below:
+Recommended Vast.ai template for a fresh verification instance:
+
+[math-sft-final-inference-rtx5090](https://cloud.vast.ai?ref_id=506182&template_id=8138794740e5b43f54031e0b77ec76a7)
+
+After the template startup finishes and `/workspace/READY_FINAL_INFERENCE.txt`
+exists:
 
 ```bash
 cd /workspace/math-sft-final-inference
@@ -186,7 +191,7 @@ Approximate RTX 5090 runtime:
 
 Runtime depends on model cache state, vLLM version, and GPU memory bandwidth.
 
-## Optional Vast.ai Template
+## Vast.ai Template Details
 
 The submitted setup was tested with this Vast.ai template:
 
