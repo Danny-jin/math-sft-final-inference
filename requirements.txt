@@ -1,0 +1,7 @@
+torch
+transformers
+vllm
+peft
+sympy
+numpy
+antlr4-python3-runtime
