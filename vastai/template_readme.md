@@ -13,6 +13,10 @@ This template is intended for one NVIDIA RTX 5090 32GB instance with CUDA
 - a virtualenv under `/workspace/venv`
 - cache directories under `/workspace/.cache`
 
+For RTX 5090 / Blackwell hosts, the startup script also makes Python prefer
+the host driver `libcuda` path (`/usr/lib/x86_64-linux-gnu`) over CUDA compat
+stubs. This avoids `cudaGetDeviceCount` error 804 on some Vast.ai images.
+
 It does not automatically run the full final inference job, because the full
 pipeline takes several hours and should be started intentionally after SSH.
 
