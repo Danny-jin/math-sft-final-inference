@@ -10,6 +10,7 @@ This template is intended for one NVIDIA RTX 5090 32GB instance with CUDA
 - Python dependencies from `requirements.txt`
 - HuggingFace CLI / `hf_transfer`
 - the public A17 LoRA adapter under `models/a17_lora`
+- a virtualenv under `/workspace/venv`
 - cache directories under `/workspace/.cache`
 
 It does not automatically run the full final inference job, because the full
@@ -19,6 +20,7 @@ After the instance starts:
 
 ```bash
 cd /workspace/math-sft-final-inference
+source /workspace/venv/bin/activate
 python run_inference.py
 ```
 

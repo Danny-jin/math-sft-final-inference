@@ -38,6 +38,8 @@ The final remote environment used:
 - PyTorch CUDA build compatible with the RTX 5090.
 - vLLM with LoRA support and the FlashInfer attention backend.
 - bfloat16 inference.
+- A Python virtualenv at `/workspace/venv` created by
+  `scripts/setup_vastai_env.sh`.
 
 The exact cloud rental workflow is not required for reproduction. On Vast.ai,
 the practical setup was:
@@ -46,7 +48,7 @@ the practical setup was:
    model, adapter, and intermediate JSONL outputs.
 2. SSH into the instance.
 3. Clone this repository.
-4. Install the Python dependencies.
+4. Install the Python dependencies into `/workspace/venv`.
 5. Download or cache the base model and LoRA adapter.
 6. Run `python run_inference.py` from the repository root.
 
@@ -54,6 +56,7 @@ For convenience, this repository also includes the Vast.ai template startup
 script used for this setup:
 
 ```text
+scripts/setup_vastai_env.sh
 vastai/onstart_final_inference.sh
 vastai/template_readme.md
 ```
@@ -145,8 +148,13 @@ python run_inference.py --a17-lora /path/to/a17_lora
 Install dependencies in the environment used for vLLM inference:
 
 ```bash
-pip install -r requirements.txt
+bash scripts/setup_vastai_env.sh
+source /workspace/venv/bin/activate
 ```
+
+The setup script intentionally uses a virtualenv instead of system Python. This
+avoids Debian/Ubuntu system-package conflicts and pins vLLM to the CUDA 12.8
+compatible stack used for this submission.
 
 The final runs used bfloat16 vLLM inference with:
 
@@ -185,6 +193,7 @@ nvidia-smi
 cd /workspace/math-sft-final-inference
 
 git status --short
+source /workspace/venv/bin/activate
 python run_inference.py --help
 
 ls -lh data/private.jsonl
@@ -210,6 +219,7 @@ This tests the whole code path without spending hours:
 
 ```bash
 cd /workspace/math-sft-final-inference
+source /workspace/venv/bin/activate
 bash scripts/smoke_test.sh
 ```
 
@@ -256,6 +266,7 @@ Approximate RTX 5090 runtime: 6-8 hours. Keep the SSH session alive with
 ```bash
 tmux new -s final
 cd /workspace/math-sft-final-inference
+source /workspace/venv/bin/activate
 python run_inference.py 2>&1 | tee outputs/final_run.log
 ```
 

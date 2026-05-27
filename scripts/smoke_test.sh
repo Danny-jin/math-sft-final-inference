@@ -11,7 +11,13 @@ SMOKE_PRIVATE_JSONL="${SMOKE_PRIVATE_JSONL:-outputs/smoke/private_smoke_${SMOKE_
 SMOKE_OUTPUT_CSV="${SMOKE_OUTPUT_CSV:-outputs/smoke/submission_smoke.csv}"
 
 echo "[smoke] repo: $(pwd)"
-echo "[smoke] python: $(python -V 2>&1)"
+
+if [ -z "${PYTHON:-}" ] && [ -x /workspace/venv/bin/python ]; then
+  PYTHON=/workspace/venv/bin/python
+fi
+PYTHON="${PYTHON:-python}"
+
+echo "[smoke] python: $("$PYTHON" -V 2>&1)"
 nvidia-smi || true
 
 test -s data/private.jsonl
@@ -19,7 +25,7 @@ test -s artifacts/private_all943_codex_A16style_accepted_reference.jsonl
 
 if [ ! -s models/a17_lora/adapter_config.json ] || [ ! -s models/a17_lora/adapter_model.safetensors ]; then
   echo "[smoke] LoRA adapter missing; downloading from HuggingFace..."
-  python - <<'PY'
+  "$PYTHON" - <<'PY'
 from huggingface_hub import snapshot_download
 snapshot_download(
     repo_id="Danny-jin/math-sft-a17-lora",
@@ -40,7 +46,7 @@ PY
 fi
 
 mkdir -p "$(dirname "$SMOKE_PRIVATE_JSONL")"
-python - <<PY
+"$PYTHON" - <<PY
 from pathlib import Path
 src = Path("data/private.jsonl")
 dst = Path("$SMOKE_PRIVATE_JSONL")
@@ -50,7 +56,7 @@ dst.write_text("\\n".join(rows) + "\\n")
 print(f"[smoke] wrote {dst} rows={len(rows)}")
 PY
 
-python run_inference.py \
+"$PYTHON" run_inference.py \
   --private-jsonl "$SMOKE_PRIVATE_JSONL" \
   --output-csv "$SMOKE_OUTPUT_CSV" \
   --work-dir "$SMOKE_WORK_DIR" \

@@ -25,35 +25,4 @@ else
 fi
 
 cd /workspace/math-sft-final-inference
-python3 -m pip install -r requirements.txt
-python3 -m pip install --upgrade "huggingface_hub[cli]" hf_transfer
-
-python3 - <<'PY'
-import importlib
-mods = ["torch", "transformers", "vllm", "peft", "huggingface_hub"]
-for name in mods:
-    try:
-        m = importlib.import_module(name)
-        print(f"{name}={getattr(m, '__version__', 'unknown')}")
-    except Exception as exc:
-        print(f"{name}=IMPORT_FAILED: {exc}")
-PY
-
-hf download Danny-jin/math-sft-a17-lora --local-dir models/a17_lora
-
-cat > /workspace/READY_FINAL_INFERENCE.txt <<'EOF'
-Final inference environment is prepared.
-
-Run from SSH:
-
-cd /workspace/math-sft-final-inference
-python run_inference.py
-
-Optional local base cache:
-
-hf download Qwen/Qwen3-4B-Thinking-2507 --local-dir /workspace/models/Qwen3-4B-Thinking-2507
-export QWEN_BASE_MODEL=/workspace/models/Qwen3-4B-Thinking-2507
-python run_inference.py
-EOF
-
-echo "Ready: /workspace/READY_FINAL_INFERENCE.txt"
+bash scripts/setup_vastai_env.sh 2>&1 | tee /workspace/setup_final_repo.log
