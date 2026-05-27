@@ -1,16 +1,13 @@
-"""
-EXPERIMENT A: same as run_inference_lora.py but injects a precision
-instruction into the user message for FF questions.
-
-Goal: test whether v2 (lora) trained on RS (which has only 0.8% long-decimal
-samples) will comply with a runtime precision request, even though it
-wasn't trained for it.
+"""Run greedy inference with an optional LoRA adapter and hiprec prompt.
 
 Usage:
     python3 scripts/run_inference_lora_hiprec.py \
-        --input /workspace/data/dev200.jsonl \
-        --output /workspace/results/dev200_v2_greedy_hiprec.jsonl \
-        --lora /workspace/ckpt/lora_v2
+        --input data/private.jsonl \
+        --output outputs/private_A17_lora_greedy_28k_typed_v1.jsonl \
+        --base /path/to/Qwen3-4B-Thinking \
+        --lora models/a17_lora \
+        --max_tokens 28672 \
+        --prompt_variant typed_v1
 """
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +46,7 @@ def main():
     ap.add_argument("--seed",   type=int, default=42)
     ap.add_argument("--prompt_variant",
                     choices=["default", "contract_v2", "typed_v1"],
-                    default="default")
+                    default="typed_v1")
     args = ap.parse_args()
 
     from vllm import LLM, SamplingParams

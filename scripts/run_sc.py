@@ -1,33 +1,15 @@
-"""
-Self-Consistency inference (k samples per question) → JSONL.
-
-Recovered (Phase 2 instance was lost). Phase 2 actual settings (handoff §2):
-  - SC k=5, T=0.6, top_p=0.95, top_k=20
-  - max_tokens=20480 (dev) / 24576 (private; LESSON 5)
-  - max_model_len=32768, max_num_seqs=32, dtype=bf16
+"""Self-consistency inference: generate k samples per question into JSONL.
 
 Output schema (one row per question):
   {"id": <id>, "type": "mcq"|"ff", "samples": [<text>, ...]}
 
 Usage:
-    # dev200 SC k=5
+    # final private SC k=5
     python scripts/run_sc.py \
-        --input /workspace/data/dev200.jsonl \
-        --output /workspace/results/dev200_sc5.jsonl \
-        --n 5 --temperature 0.6 --max_tokens 20480
-
-    # private SC k=5 (Phase 2 LESSON 5: max_tokens 24576)
-    python scripts/run_sc.py \
-        --input /workspace/data/private.jsonl \
-        --output /workspace/results/private_sc5.jsonl \
-        --n 5 --temperature 0.6 --max_tokens 24576
-
-    # Phase 3: pass --lora-path to load a LoRA adapter
-    python scripts/run_sc.py \
-        --input /workspace/data/dev200.jsonl \
-        --output /workspace/results/dev200_lora_v1_sc5.jsonl \
-        --n 5 --temperature 0.6 --max_tokens 20480 \
-        --lora-path /workspace/ckpt/lora_v1
+        --input data/private.jsonl \
+        --output outputs/private_sc5.jsonl \
+        --n 5 --temperature 0.6 --top_p 0.95 --top_k 20 \
+        --max_tokens 28672 --prompt_variant typed_v1 --hiprec
 """
 import argparse, json, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -37,12 +19,6 @@ from prompts import (
     build_prompt_split_typed_v1,
     is_mc,
 )
-
-
-def to_gold(answer):
-    if isinstance(answer, list):
-        return [str(a) for a in answer]
-    return [str(answer)]
 
 
 def build_prompt(
@@ -68,10 +44,9 @@ def main():
     ap.add_argument("--output", required=True,
                     help="Output JSONL with k samples per row.")
     ap.add_argument("--model",  default="/workspace/qwen_v2/Qwen3-4B-Thinking",
-                    help="Local model dir or HF id. For Phase 3 merged LoRA, "
-                         "point this at the merged bf16 ckpt.")
+                    help="Local base model directory or HuggingFace model id.")
     ap.add_argument("--lora-path", default=None,
-                    help="Optional LoRA adapter dir (Phase 3).")
+                    help="Optional LoRA adapter directory.")
     ap.add_argument("--n",        type=int, default=5)
     ap.add_argument("--temperature", type=float, default=0.6)
     ap.add_argument("--top_p",    type=float, default=0.95)
@@ -81,7 +56,7 @@ def main():
                     help="Inject the production high-precision formatting hint for FF prompts.")
     ap.add_argument("--prompt_variant",
                     choices=["default", "contract_v2", "typed_v1"],
-                    default="default",
+                    default="typed_v1",
                     help="Prompt template to use. typed_v1 adds bucket-specific answer-format rules.")
     ap.add_argument("--seed",     type=int, default=0)
     ap.add_argument("--max_model_len", type=int, default=32768)

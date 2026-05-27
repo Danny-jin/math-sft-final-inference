@@ -1,12 +1,9 @@
-"""
-V3 SYSTEM prompts + chat-template prompt builder.
+"""Prompt builders used by the final inference pipeline.
 
-Recovered from V4 notebook Cell 17 (the canonical Phase 2 prompts).
-THESE STRINGS ARE THE PHASE 2 ABLATION ANCHOR — do not modify.
-
-LESSON 1 (handoff.md): Path A added "force decimal ≥ 5 sigfigs" to SYSTEM_FF
-and lost -3.5pp on dev200 because dev gold has lots of symbolic answers
-(\\arctan(1/8), \\frac{\\pi}{6}). V3 stays prompt-symbolic.
+The final submitted pipeline uses ``typed_v1``. The older ``default`` and
+``contract_v2`` builders are retained only as explicit CLI compatibility
+options; they are not selected by ``run_inference()`` unless the caller passes a
+different ``--prompt-variant``.
 """
 
 import re
@@ -43,10 +40,8 @@ Formatting rules inside \boxed{}:
 """
 
 
-# PRECISION_HINT — added to the FF user message in the "hiprec" inference
-# variant. Production Kaggle submissions inject this; dev eval MUST also
-# inject it to be a fair predictor. Single source of truth for both
-# `run_inference_lora_hiprec.py` and `eval_lora_greedy.py --hiprec`.
+# PRECISION_HINT is injected into free-form prompts when hiprec=True. The final
+# pipeline enables hiprec for both base self-consistency and A17 LoRA inference.
 PRECISION_HINT = (
     "Important formatting note: for decimal answers, give at least 12 "
     "significant figures (e.g. `19.7745967126229`, not `19.77`). For "
@@ -67,15 +62,13 @@ def format_mcq_user(q: str, opts: list[str]) -> str:
 
 
 def build_prompt_split(ex: dict, tokenizer, hiprec: bool = False) -> str:
-    """Build a chat-templated prompt using the split MCQ/FF system messages.
+    """Build the legacy split MCQ/FF prompt.
 
     Args:
       ex: row dict with "question" (+ "options" for MCQ).
       tokenizer: HF tokenizer whose chat template will be applied.
       hiprec: if True, inject `PRECISION_HINT` into the FF user message
-        (matches `run_inference_lora_hiprec.py`). MCQ is unaffected — its
-        answer is a letter, so precision is irrelevant. Default False
-        keeps backward compatibility with non-hiprec callers.
+        (MCQ is unaffected because its answer is a letter).
     """
     if is_mc(ex):
         user = format_mcq_user(ex["question"], ex["options"])
@@ -250,11 +243,7 @@ def _format_contract_requirements(ex: dict, hiprec: bool = True) -> str:
 
 
 def build_prompt_split_contract_v2(ex: dict, tokenizer, hiprec: bool = True) -> str:
-    """Build the type-aware contract prompt for targeted prompt A/B tests.
-
-    This intentionally leaves the Phase 2 anchor prompts unchanged. Use this
-    variant only when passing `--prompt_variant contract_v2`.
-    """
+    """Build the legacy type-aware contract prompt."""
     if is_mc(ex):
         user = format_mcq_user(ex["question"], ex["options"])
         user += "\n\nCompute independently, compare against all options, and finish with exactly one boxed letter."
@@ -425,13 +414,7 @@ def _format_typed_requirements(ex: dict, hiprec: bool = True) -> str:
 
 
 def build_prompt_split_typed_v1(ex: dict, tokenizer, hiprec: bool = True) -> str:
-    """Build the statistics-informed typed prompt.
-
-    This is the higher-ROI successor to contract_v2: it keeps the base prompt
-    short, but injects stricter contracts for the high-disagreement buckets
-    observed on private: FF multi, high-precision/statistics, embedded options,
-    units/words, exact symbolic answers, intervals/lists, and percentages.
-    """
+    """Build the final typed prompt used by ``run_inference()``."""
     if is_mc(ex):
         user = format_mcq_user(ex["question"], ex["options"])
         user += (
@@ -459,100 +442,6 @@ def build_prompt_split_typed_v1(ex: dict, tokenizer, hiprec: bool = True) -> str
                 f"comma-separated and in the same order as the [ANS] placeholders."
             )
         sys_prompt = SYSTEM_FF_TYPED_V1
-    msgs = [{"role": "system", "content": sys_prompt},
-            {"role": "user", "content": user}]
-    return tokenizer.apply_chat_template(msgs, tokenize=False,
-                                         add_generation_prompt=True)
-
-
-SYSTEM_MC_CONCISE_RESCUE = r"""You are an expert mathematician solving a multiple-choice problem.
-
-This is a rescue run for a previous overlong attempt. Keep the solution concise:
-- Do only the necessary calculation.
-- Avoid exploratory digressions.
-- End with exactly one final line: \boxed{LETTER}
-
-Do NOT repeat the option text inside \boxed{}. Only the letter.
-"""
-
-
-SYSTEM_FF_CONCISE_RESCUE = r"""You are an expert mathematician solving a free-form math problem.
-
-This is a rescue run for a previous overlong attempt. Keep the solution concise:
-- Identify the [ANS] placeholders in order.
-- Do only the necessary calculation.
-- Emit EXACTLY ONE \boxed{...} containing all final answers, comma-separated.
-- Put the boxed answer before any optional explanation if you are running long.
-
-Formatting inside \boxed{}:
-- No units.
-- Use LaTeX.
-- Exact symbolic form when possible; otherwise enough decimal precision.
-"""
-
-
-def build_prompt_split_concise_rescue(ex: dict, tokenizer, hiprec: bool = False) -> str:
-    """Build a shorter rescue prompt for rows that previously hit max_tokens."""
-    if is_mc(ex):
-        user = format_mcq_user(ex["question"], ex["options"])
-        sys_prompt = SYSTEM_MC_CONCISE_RESCUE
-    else:
-        n_ans = ex["question"].count("[ANS]") or 1
-        hint = f"{PRECISION_HINT}\n\n" if hiprec else ""
-        if n_ans == 1:
-            user = (f"Question:\n{ex['question']}\n\n"
-                    f"{hint}"
-                    f"Give a concise solution and put the final answer inside a single \\boxed{{}}.")
-        else:
-            user = (f"Question:\n{ex['question']}\n\n"
-                    f"{hint}"
-                    f"This question has {n_ans} [ANS] placeholders. "
-                    f"Put ALL {n_ans} answers inside a SINGLE \\boxed{{...}}, "
-                    f"comma-separated and in the same order as the placeholders.")
-        sys_prompt = SYSTEM_FF_CONCISE_RESCUE
-    msgs = [{"role": "system", "content": sys_prompt},
-            {"role": "user", "content": user}]
-    return tokenizer.apply_chat_template(msgs, tokenize=False,
-                                         add_generation_prompt=True)
-
-
-SYSTEM_MC_ANSWER_ONLY_RESCUE = r"""You are an expert mathematician.
-
-Return ONLY the final multiple-choice answer in exactly this form:
-\boxed{LETTER}
-
-No explanation. No reasoning text. No option text. Only one boxed letter.
-"""
-
-
-SYSTEM_FF_ANSWER_ONLY_RESCUE = r"""You are an expert mathematician.
-
-Return ONLY the final answer in exactly one \boxed{...}.
-For multiple [ANS] placeholders, put all answers comma-separated in order.
-No explanation. No reasoning text. No units.
-Use exact symbolic form when possible; otherwise enough decimal precision.
-"""
-
-
-def build_prompt_split_answer_only_rescue(ex: dict, tokenizer, hiprec: bool = False) -> str:
-    """Build an answer-only prompt for stubborn rows that repeatedly ramble."""
-    if is_mc(ex):
-        user = format_mcq_user(ex["question"], ex["options"])
-        sys_prompt = SYSTEM_MC_ANSWER_ONLY_RESCUE
-    else:
-        n_ans = ex["question"].count("[ANS]") or 1
-        hint = f"{PRECISION_HINT}\n\n" if hiprec else ""
-        if n_ans == 1:
-            user = (f"Question:\n{ex['question']}\n\n"
-                    f"{hint}"
-                    f"Return only one final \\boxed{{answer}}.")
-        else:
-            user = (f"Question:\n{ex['question']}\n\n"
-                    f"{hint}"
-                    f"This question has {n_ans} [ANS] placeholders. "
-                    f"Return only one final \\boxed{{answer1, answer2, ...}} "
-                    f"with all {n_ans} answers in order.")
-        sys_prompt = SYSTEM_FF_ANSWER_ONLY_RESCUE
     msgs = [{"role": "system", "content": sys_prompt},
             {"role": "user", "content": user}]
     return tokenizer.apply_chat_template(msgs, tokenize=False,
