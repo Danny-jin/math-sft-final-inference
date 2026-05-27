@@ -40,7 +40,9 @@ Runtime varies with vLLM version, GPU memory bandwidth, and whether the base mod
 
 ## Model Setup
 
-This repo does not commit model weights.
+This repo does not commit model weights. The final A17 LoRA adapter is loaded
+from HuggingFace Hub, or from a local directory if it has already been
+downloaded.
 
 Place the designated Qwen base model somewhere local and point `QWEN_BASE_MODEL` to it:
 
@@ -48,7 +50,13 @@ Place the designated Qwen base model somewhere local and point `QWEN_BASE_MODEL`
 export QWEN_BASE_MODEL=/workspace/qwen_v2/Qwen3-4B-Thinking
 ```
 
-Place the final A17 LoRA adapter in:
+The code is configured to download the final A17 LoRA adapter from:
+
+```text
+Danny-jin/math-sft-a17-lora
+```
+
+If the adapter is not already local, `run_inference()` downloads it into:
 
 ```text
 models/a17_lora/
@@ -64,15 +72,21 @@ tokenizer_config.json
 special_tokens_map.json
 ```
 
-If downloading from HuggingFace Hub, use:
+To download manually:
 
 ```bash
-huggingface-cli download <YOUR_HF_USERNAME>/<YOUR_A17_LORA_REPO> \
-  --local-dir models/a17_lora \
-  --local-dir-use-symlinks False
+hf download Danny-jin/math-sft-a17-lora \
+  --local-dir models/a17_lora
 ```
 
-Alternatively, pass the adapter path directly:
+If the Hub repo name changes, either edit `DEFAULT_A17_LORA_HF_REPO` in
+`run_inference.py` or set:
+
+```bash
+export A17_LORA_HF_REPO=<YOUR_HF_USERNAME>/<YOUR_A17_LORA_REPO>
+```
+
+Alternatively, pass an already-downloaded adapter path directly:
 
 ```bash
 python run_inference.py --a17-lora /path/to/a17_lora

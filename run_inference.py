@@ -38,9 +38,11 @@ from vote_eval import vote_all  # noqa: E402
 
 DEFAULT_PRIVATE_JSONL = REPO / "data" / "private.jsonl"
 DEFAULT_A17_LORA = REPO / "models" / "a17_lora"
+DEFAULT_A17_LORA_HF_REPO = "Danny-jin/math-sft-a17-lora"
 DEFAULT_TARGET_REF = REPO / "artifacts" / "private_all943_codex_A16style_accepted_reference.jsonl"
 DEFAULT_WORK_DIR = REPO / "outputs" / "run_inference_A17_pipeline"
 DEFAULT_OUTPUT_CSV = REPO / "outputs" / "submission_run_inference_A17_target_gate.csv"
+REQUIRED_LORA_FILES = ("adapter_config.json", "adapter_model.safetensors")
 
 
 def _env_path(name: str, default: Path | str) -> str:
@@ -70,6 +72,55 @@ def _id_int(value: Any) -> int:
 def _run(cmd: list[str], *, cwd: Path = REPO) -> None:
     print("\n[run_inference] " + " ".join(cmd), flush=True)
     subprocess.run(cmd, cwd=str(cwd), check=True)
+
+
+def _has_lora_files(path: Path) -> bool:
+    return all((path / name).exists() for name in REQUIRED_LORA_FILES)
+
+
+def _resolve_lora_path(path: Path, hf_repo: str | None) -> Path:
+    """Return a local LoRA path, downloading from HuggingFace Hub if needed."""
+    if _has_lora_files(path):
+        return path
+
+    repo_id = (hf_repo or "").strip()
+    if repo_id:
+        print(
+            f"[run_inference] LoRA files not found in {path}; downloading {repo_id}...",
+            flush=True,
+        )
+        try:
+            from huggingface_hub import snapshot_download
+        except Exception as exc:  # pragma: no cover - environment dependent
+            raise RuntimeError(
+                "A17 LoRA files are missing locally and huggingface_hub is not "
+                "available. Install requirements.txt or place the adapter in "
+                f"{path}."
+            ) from exc
+        snapshot_download(
+            repo_id=repo_id,
+            local_dir=str(path),
+            allow_patterns=[
+                "adapter_config.json",
+                "adapter_model.safetensors",
+                "README.md",
+                "tokenizer*",
+                "special_tokens_map.json",
+                "added_tokens.json",
+                "chat_template.jinja",
+                "merges.txt",
+                "vocab.json",
+            ],
+        )
+        if _has_lora_files(path):
+            return path
+
+    raise FileNotFoundError(
+        "A17 LoRA adapter is missing. Expected "
+        f"{', '.join(REQUIRED_LORA_FILES)} in {path}. "
+        "Either upload/download the adapter from HuggingFace Hub or pass "
+        "--a17-lora /path/to/a17_lora."
+    )
 
 
 def _maybe_run(cmd: list[str], output: Path, *, reuse_existing: bool) -> None:
@@ -209,6 +260,7 @@ def run_inference(
     *,
     base_model: str | None = None,
     a17_lora: str | Path | None = None,
+    a17_lora_repo: str | None = None,
     target_ref: str | Path | None = None,
     work_dir: str | Path | None = None,
     reuse_existing: bool = False,
@@ -229,6 +281,7 @@ def run_inference(
     out_csv = Path(output_csv or _env_path("FINAL_SUBMISSION_CSV", DEFAULT_OUTPUT_CSV)).expanduser()
     base = base_model or os.environ.get("QWEN_BASE_MODEL", "/workspace/qwen_v2/Qwen3-4B-Thinking")
     lora = Path(a17_lora or _env_path("A17_LORA_PATH", DEFAULT_A17_LORA)).expanduser()
+    lora_repo = a17_lora_repo if a17_lora_repo is not None else os.environ.get("A17_LORA_HF_REPO", DEFAULT_A17_LORA_HF_REPO)
     ref = Path(target_ref or _env_path("CODEX_TARGET_REF", DEFAULT_TARGET_REF)).expanduser()
     work = Path(work_dir or _env_path("RUN_INFERENCE_WORKDIR", DEFAULT_WORK_DIR)).expanduser()
     work.mkdir(parents=True, exist_ok=True)
@@ -237,13 +290,13 @@ def run_inference(
         raise FileNotFoundError(f"private JSONL not found: {private_path}")
     if not ref.exists():
         raise FileNotFoundError(f"target reference not found: {ref}")
-    if not lora.exists():
-        raise FileNotFoundError(f"A17 LoRA path not found: {lora}")
+    lora = _resolve_lora_path(lora, lora_repo)
 
     private_rows = _read_jsonl(private_path)
     print(f"[run_inference] private rows: {len(private_rows)}", flush=True)
     print(f"[run_inference] base model:   {base}", flush=True)
     print(f"[run_inference] A17 LoRA:     {lora}", flush=True)
+    print(f"[run_inference] A17 HF repo:  {lora_repo or '(disabled)'}", flush=True)
     print(f"[run_inference] target ref:   {ref}", flush=True)
     print(f"[run_inference] work dir:     {work}", flush=True)
 
@@ -339,6 +392,7 @@ def _parse_args() -> argparse.Namespace:
     ap.add_argument("--output-csv", default=str(DEFAULT_OUTPUT_CSV))
     ap.add_argument("--base-model", default=os.environ.get("QWEN_BASE_MODEL", "/workspace/qwen_v2/Qwen3-4B-Thinking"))
     ap.add_argument("--a17-lora", default=str(DEFAULT_A17_LORA))
+    ap.add_argument("--a17-lora-repo", default=os.environ.get("A17_LORA_HF_REPO", DEFAULT_A17_LORA_HF_REPO))
     ap.add_argument("--target-ref", default=str(DEFAULT_TARGET_REF))
     ap.add_argument("--work-dir", default=str(DEFAULT_WORK_DIR))
     ap.add_argument("--reuse-existing", action="store_true")
@@ -362,6 +416,7 @@ if __name__ == "__main__":
         output_csv=args.output_csv,
         base_model=args.base_model,
         a17_lora=args.a17_lora,
+        a17_lora_repo=args.a17_lora_repo,
         target_ref=args.target_ref,
         work_dir=args.work_dir,
         reuse_existing=args.reuse_existing,
