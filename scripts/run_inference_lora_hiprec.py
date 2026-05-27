@@ -4,7 +4,7 @@ Usage:
     python3 scripts/run_inference_lora_hiprec.py \
         --input data/private.jsonl \
         --output outputs/private_A17_lora_greedy_28k_typed_v1.jsonl \
-        --base /path/to/Qwen3-4B-Thinking \
+        --base Qwen/Qwen3-4B-Thinking-2507 \
         --lora models/a17_lora \
         --max_tokens 28672 \
         --prompt_variant typed_v1
