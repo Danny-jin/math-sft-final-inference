@@ -30,7 +30,7 @@ loaded from HuggingFace Hub.
 
 Recommended Vast.ai template for a fresh verification instance:
 
-[math-sft-final-inference-rtx5090](https://cloud.vast.ai?ref_id=506182&template_id=8138794740e5b43f54031e0b77ec76a7)
+[math-sft-final-inference-rtx5090](https://cloud.vast.ai?ref_id=506182&template_id=1d9d8aa5309969cfd0c907849664d158)
 
 After the template startup finishes and `/workspace/READY_FINAL_INFERENCE.txt`
 exists:
@@ -196,9 +196,9 @@ Runtime depends on model cache state, vLLM version, and GPU memory bandwidth.
 The submitted setup was tested with this Vast.ai template:
 
 - Template name: `math-sft-final-inference-rtx5090`
-- Template ID: `437450`
-- Template hash: `8138794740e5b43f54031e0b77ec76a7`
-- Template link: [cloud.vast.ai template](https://cloud.vast.ai?ref_id=506182&template_id=8138794740e5b43f54031e0b77ec76a7)
+- Template ID: `437555`
+- Template hash: `1d9d8aa5309969cfd0c907849664d158`
+- Template link: [cloud.vast.ai template](https://cloud.vast.ai?ref_id=506182&template_id=1d9d8aa5309969cfd0c907849664d158)
 - Image: `vastai/pytorch:2.10.0-cu128-cuda-12.9-mini-py312-2026-04-15`
 - Search filter: single RTX 5090, CUDA `>=12.8`, disk `>=100GB`
 
