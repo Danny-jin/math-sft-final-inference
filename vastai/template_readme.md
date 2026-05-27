@@ -1,5 +1,8 @@
 Final inference template for `Danny-jin/math-sft-final-inference`.
 
+Template link:
+https://cloud.vast.ai?ref_id=506182&template_id=b351cd170c76ca68d8682ffa4af732d0
+
 This template is intended for one NVIDIA RTX 5090 32GB instance with CUDA
 12.8+ support and at least 100GB disk. It prepares:
 
