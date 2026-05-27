@@ -1,16 +1,18 @@
-"""
-Postprocess: turn raw model output into a clean, judger-parseable answer.
+"""Postprocess raw model output into a clean, judger-parseable answer.
 
-Key fixes (targeting the error modes on the 46% Kaggle baseline):
-  1) merge_multi_boxed: fold "</think> ... \\boxed{a}, \\boxed{b}" into "\\boxed{a, b}"
-  2) split_ff_multi:    balanced-paren splitter; won't wrongly split single
-                        coordinate/interval answers like (-2.39, -0.81)
-  3) extract_mcq_answer: handle True/False/None/Roman-numeral MCQ choices
-                         beyond plain A-J letters
-  4) rescue: still try a best-effort extraction when </think> or \\boxed is missing
+This module is used by the self-consistency voting path. It provides:
+
+1. balanced ``\\boxed{...}`` extraction and multi-box merging,
+2. MCQ letter extraction,
+3. free-form answer splitting that respects parentheses/brackets/braces,
+4. light unit/spacing cleanup before canonical voting.
+
+The final A17 target gate in ``run_inference.py`` does not depend on this
+module for correctness; this module mainly affects the base self-consistency
+fallback response.
 """
 import os, re, sys
-sys.path.insert(0, "/workspace/judger")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from utils import (last_boxed_only_string, remove_boxed,
                    UNITS, SIMPLE_REPLACE_MAP)
 from judger import Judger

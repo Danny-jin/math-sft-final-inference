@@ -1,11 +1,4 @@
-"""
-SC majority-vote + canonical FF matcher (Phase 2 D3 hot path).
-
-Recovered (Phase 2 instance was lost). Re-implemented from:
-  - V4 Cell 29 (vote_all import + S3 call)
-  - V4 Cell 28 (canon_ff_v2 sanity examples)
-  - handoff.md §5 description
-  - phase2_plan.md §0.2 (S3 = 0.735 dev = 5 rescued / 2 hurt vs greedy)
+"""Self-consistency majority vote plus canonical free-form matching.
 
 `canon_ff_v2(s)` returns a SET of canonical keys for an FF answer string,
 multi-key OR'd: literal stripped string, judger.norm_math_str, and a numeric

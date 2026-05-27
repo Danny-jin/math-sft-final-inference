@@ -30,7 +30,7 @@ Usage:
         --lora-path /workspace/ckpt/lora_v1
 """
 import argparse, json, os, sys
-sys.path.insert(0, "/workspace/scripts")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from prompts import (
     build_prompt_split,
     build_prompt_split_contract_v2,

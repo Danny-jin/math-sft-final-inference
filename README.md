@@ -32,7 +32,7 @@ Runtime varies with vLLM version, GPU memory bandwidth, and whether the base mod
 - `scripts/run_sc.py`: base model self-consistency generation.
 - `scripts/run_inference_lora_hiprec.py`: LoRA generation pass.
 - `scripts/vote_eval.py`: self-consistency vote logic.
-- `scripts/normalize_opus_output.py`: final boxed-answer extraction and normalization helpers.
+- `scripts/answer_normalization.py`: final boxed-answer extraction and normalization helpers.
 - `scripts/prompts.py`: final prompt templates, including `typed_v1`.
 - `judger/`: local post-processing helpers used by the voting path.
 - `data/private.jsonl`: private input file used by default.

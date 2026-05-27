@@ -1,19 +1,13 @@
-"""
-Post-process normalizer for Opus distillation outputs.
+"""Answer extraction and normalization helpers for final inference.
 
-Strips harmless format quirks (\\text{}, \\dfrac, \\,, polynomial ^ vs **,
-split tuples) so the auto_judge can match outputs that are semantically
-correct but cosmetically off. Saves us from putting these rules in the
-Opus prompt itself (which would bloat it).
+These utilities are used by ``run_inference.py`` after self-consistency voting
+and during the A17 target-gate check. They intentionally perform only
+deterministic formatting repairs such as boxed-answer extraction, top-level
+comma splitting, LaTeX cosmetic cleanup, and a few question-surface repairs.
 
-Rule of thumb: anything that's a pure cosmetic transformation, do here.
-Anything that requires actually solving the math (precision, exact form,
-answer count) must stay in the Opus prompt.
-
-Usage:
-    from normalize_opus_output import normalize_pred
-    pred_clean = normalize_pred(opus_text, gold_list)
-    # then call J.auto_judge(pred=pred_clean, gold=gold_list, options=...)
+Rule of thumb: anything that's a pure cosmetic transformation can live here.
+Anything that requires actually solving the math, changing answer precision, or
+choosing a different answer form belongs in generation/training, not here.
 """
 import re
 from math import isclose

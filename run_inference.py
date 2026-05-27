@@ -32,7 +32,7 @@ REPO = Path(__file__).resolve().parent
 SCRIPTS = REPO / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from normalize_opus_output import extract_box, normalize_pred_for_row  # noqa: E402
+from answer_normalization import extract_box, normalize_pred_for_row  # noqa: E402
 from vote_eval import vote_all  # noqa: E402
 
 
