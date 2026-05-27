@@ -15,7 +15,10 @@ No external model, API, calculator, or code interpreter is called at inference t
 
 ## Hardware And Runtime
 
-Final training and validation were run on a single RTX 5090 32GB GPU.
+Final training and validation were run on rented Vast.ai instances with a
+single NVIDIA RTX 5090 32GB GPU. The pipeline does not depend on Vast.ai
+specifically; any Linux machine with an equivalent CUDA-capable GPU, enough
+VRAM, and a working vLLM LoRA setup should be able to reproduce the run.
 
 Approximate times on one RTX 5090:
 
@@ -25,6 +28,26 @@ Approximate times on one RTX 5090:
 - The A17 LoRA greedy pass is much shorter because most memorized responses are brief.
 
 Runtime varies with vLLM version, GPU memory bandwidth, and whether the base model is already cached locally.
+
+The final remote environment used:
+
+- Linux remote GPU instance, accessed over SSH.
+- Python 3.12.
+- CUDA 12.9 runtime/toolkit.
+- PyTorch CUDA build compatible with the RTX 5090.
+- vLLM with LoRA support and the FlashInfer attention backend.
+- bfloat16 inference.
+
+The exact cloud rental workflow is not required for reproduction. On Vast.ai,
+the practical setup was:
+
+1. Rent a single RTX 5090 32GB instance with sufficient disk space for the base
+   model, adapter, and intermediate JSONL outputs.
+2. SSH into the instance.
+3. Clone this repository.
+4. Install the Python dependencies.
+5. Download or cache the base model and LoRA adapter.
+6. Run `python run_inference.py` from the repository root.
 
 ## Files Included
 
