@@ -49,6 +49,17 @@ the practical setup was:
 5. Download or cache the base model and LoRA adapter.
 6. Run `python run_inference.py` from the repository root.
 
+For convenience, this repository also includes the Vast.ai template startup
+script used for this setup:
+
+```text
+vastai/onstart_final_inference.sh
+vastai/template_readme.md
+```
+
+The corresponding private Vast.ai template was created as
+`math-sft-final-inference-rtx5090`.
+
 ## Files Included
 
 - `run_inference.py`: single entry point and CLI.
