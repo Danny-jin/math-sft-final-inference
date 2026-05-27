@@ -210,28 +210,13 @@ This tests the whole code path without spending hours:
 
 ```bash
 cd /workspace/math-sft-final-inference
-mkdir -p outputs/smoke
+bash scripts/smoke_test.sh
+```
 
-python - <<'PY'
-from pathlib import Path
-src = Path("data/private.jsonl")
-dst = Path("outputs/smoke/private_smoke_2.jsonl")
-rows = src.read_text().splitlines()[:2]
-dst.write_text("\n".join(rows) + "\n")
-print(dst, "rows=", len(rows))
-PY
+Equivalent expanded command:
 
-python run_inference.py \
-  --private-jsonl outputs/smoke/private_smoke_2.jsonl \
-  --output-csv outputs/smoke/submission_smoke.csv \
-  --work-dir outputs/smoke/work \
-  --base-sc-k 1 \
-  --max-tokens 1024 \
-  --max-model-len 8192 \
-  --max-num-seqs 2
-
-cat outputs/smoke/submission_smoke.report.json
-head -5 outputs/smoke/submission_smoke.csv
+```bash
+SMOKE_ROWS=2 SMOKE_MAX_TOKENS=1024 SMOKE_MAX_MODEL_LEN=8192 bash scripts/smoke_test.sh
 ```
 
 This smoke test is not expected to match final Kaggle accuracy because it uses
