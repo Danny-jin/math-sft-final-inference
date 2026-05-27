@@ -19,7 +19,9 @@ time.
    target for that problem.
 5. Use the A17 response only when its boxed answer exactly matches the stored
    target; otherwise keep the base self-consistency response.
-6. Write the final CSV and a JSON report.
+6. Apply deterministic global answer-format cleanup for parser-hostile wrappers
+   such as dollar signs, `\text{}` unit wrappers, `\dfrac`, and cases commas.
+7. Write the final CSV and a JSON report.
 
 ## Reproduce The Submission
 
