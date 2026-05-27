@@ -1,6 +1,7 @@
 Final inference template for `Danny-jin/math-sft-final-inference`.
 
-This template is intended for one NVIDIA RTX 5090 32GB instance. It prepares:
+This template is intended for one NVIDIA RTX 5090 32GB instance with CUDA
+12.8+ support and at least 100GB disk. It prepares:
 
 - the final GitHub repo under `/workspace/math-sft-final-inference`
 - Python dependencies from `requirements.txt`

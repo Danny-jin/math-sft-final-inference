@@ -33,7 +33,8 @@ The final remote environment used:
 
 - Linux remote GPU instance, accessed over SSH.
 - Python 3.12.
-- CUDA 12.9 runtime/toolkit.
+- CUDA 12.8 or newer runtime/toolkit. The Vast.ai template currently uses a
+  CUDA 12.9 PyTorch image.
 - PyTorch CUDA build compatible with the RTX 5090.
 - vLLM with LoRA support and the FlashInfer attention backend.
 - bfloat16 inference.
@@ -41,7 +42,7 @@ The final remote environment used:
 The exact cloud rental workflow is not required for reproduction. On Vast.ai,
 the practical setup was:
 
-1. Rent a single RTX 5090 32GB instance with sufficient disk space for the base
+1. Rent a single RTX 5090 32GB instance with at least 100GB disk for the base
    model, adapter, and intermediate JSONL outputs.
 2. SSH into the instance.
 3. Clone this repository.
@@ -57,8 +58,13 @@ vastai/onstart_final_inference.sh
 vastai/template_readme.md
 ```
 
-The corresponding private Vast.ai template was created as
-`math-sft-final-inference-rtx5090`.
+The corresponding private Vast.ai template is
+`math-sft-final-inference-rtx5090`:
+
+- Template ID: `437450`
+- Template hash: `b351cd170c76ca68d8682ffa4af732d0`
+- Image: `vastai/pytorch:2.10.0-cu128-cuda-12.9-mini-py312-2026-04-15`
+- Search filter: single RTX 5090, CUDA `>=12.8`, disk `>=100GB`
 
 ## Files Included
 
