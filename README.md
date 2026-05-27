@@ -158,7 +158,91 @@ The final runs used bfloat16 vLLM inference with:
 - `top_k=20`
 - prompt variant `typed_v1`
 
-## Reproduce The Submission
+## Fresh Instance Checklist
+
+Use this section when you have just SSHed into a new Vast.ai instance.
+
+### 0. Confirm The Startup Script Finished
+
+If you used the Vast.ai template, wait until this file exists:
+
+```bash
+ls -lh /workspace/READY_FINAL_INFERENCE.txt
+cat /workspace/READY_FINAL_INFERENCE.txt
+```
+
+If it is not there yet, the template startup script is still preparing the
+environment. Check the workspace and GPU:
+
+```bash
+ls -lah /workspace
+nvidia-smi
+```
+
+### 1. Enter The Repo And Check Files
+
+```bash
+cd /workspace/math-sft-final-inference
+
+git status --short
+python run_inference.py --help
+
+ls -lh data/private.jsonl
+ls -lh artifacts/private_all943_codex_A16style_accepted_reference.jsonl
+ls -lh models/a17_lora/adapter_config.json models/a17_lora/adapter_model.safetensors
+```
+
+Expected:
+
+- `data/private.jsonl` has 943 rows.
+- `artifacts/private_all943_codex_A16style_accepted_reference.jsonl` exists.
+- `models/a17_lora/adapter_model.safetensors` exists.
+
+### 2. Run A Cheap End-To-End Smoke Test
+
+This tests the whole code path without spending hours:
+
+1. base model generation
+2. self-consistency vote
+3. A17 LoRA generation
+4. target-gated overlay
+5. final CSV/report writing
+
+```bash
+cd /workspace/math-sft-final-inference
+mkdir -p outputs/smoke
+
+python - <<'PY'
+from pathlib import Path
+src = Path("data/private.jsonl")
+dst = Path("outputs/smoke/private_smoke_2.jsonl")
+rows = src.read_text().splitlines()[:2]
+dst.write_text("\n".join(rows) + "\n")
+print(dst, "rows=", len(rows))
+PY
+
+python run_inference.py \
+  --private-jsonl outputs/smoke/private_smoke_2.jsonl \
+  --output-csv outputs/smoke/submission_smoke.csv \
+  --work-dir outputs/smoke/work \
+  --base-sc-k 1 \
+  --max-tokens 1024 \
+  --max-model-len 8192 \
+  --max-num-seqs 2
+
+cat outputs/smoke/submission_smoke.report.json
+head -5 outputs/smoke/submission_smoke.csv
+```
+
+This smoke test is not expected to match final Kaggle accuracy because it uses
+`k=1` and short generations. It only confirms that the pipeline can load the
+base model, load the LoRA adapter, generate, post-process, and write a CSV.
+The first run may still take several minutes because vLLM initializes and may
+download/cache the base model.
+
+### 3. Run The Final Submission Pipeline
+
+Only run this after the smoke test succeeds:
 
 From the repository root:
 
@@ -179,6 +263,21 @@ and writes:
 ```text
 outputs/submission_run_inference_A17_target_gate.csv
 outputs/submission_run_inference_A17_target_gate.report.json
+```
+
+Approximate RTX 5090 runtime: 6-8 hours. Keep the SSH session alive with
+`tmux` if desired:
+
+```bash
+tmux new -s final
+cd /workspace/math-sft-final-inference
+python run_inference.py 2>&1 | tee outputs/final_run.log
+```
+
+Detach with `Ctrl-b d`; later reconnect with:
+
+```bash
+tmux attach -t final
 ```
 
 Equivalent Python usage:
