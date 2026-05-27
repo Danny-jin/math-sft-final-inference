@@ -156,6 +156,10 @@ The setup script intentionally uses a virtualenv instead of system Python. This
 avoids Debian/Ubuntu system-package conflicts and pins vLLM to the CUDA 12.8
 compatible stack used for this submission.
 
+On RTX 5090/Blackwell instances, the setup also makes Python prefer the host
+driver library path `/usr/lib/x86_64-linux-gnu` over CUDA compat stubs. This
+avoids `cudaGetDeviceCount` error 804 on some Vast.ai images.
+
 The final runs used bfloat16 vLLM inference with:
 
 - `max_model_len=32768`

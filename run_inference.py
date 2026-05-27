@@ -72,7 +72,13 @@ def _id_int(value: Any) -> int:
 
 def _run(cmd: list[str], *, cwd: Path = REPO) -> None:
     print("\n[run_inference] " + " ".join(cmd), flush=True)
-    subprocess.run(cmd, cwd=str(cwd), check=True)
+    env = os.environ.copy()
+    libcuda_dir = "/usr/lib/x86_64-linux-gnu"
+    ld_library_path = env.get("LD_LIBRARY_PATH", "")
+    parts = [part for part in ld_library_path.split(":") if part]
+    if libcuda_dir not in parts:
+        env["LD_LIBRARY_PATH"] = libcuda_dir + (":" + ld_library_path if ld_library_path else "")
+    subprocess.run(cmd, cwd=str(cwd), env=env, check=True)
 
 
 def _has_lora_files(path: Path) -> bool:
