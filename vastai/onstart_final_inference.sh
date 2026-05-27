@@ -16,8 +16,6 @@ apt-get update
 apt-get install -y --no-install-recommends git git-lfs curl ca-certificates tmux htop nvtop rsync
 git lfs install || true
 
-python3 -m pip install --upgrade pip setuptools wheel
-
 if [ ! -d /workspace/math-sft-final-inference/.git ]; then
   git clone https://github.com/Danny-jin/math-sft-final-inference.git /workspace/math-sft-final-inference
 else
