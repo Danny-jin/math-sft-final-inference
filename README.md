@@ -65,8 +65,8 @@ The corresponding private Vast.ai template is
 `math-sft-final-inference-rtx5090`:
 
 - Template ID: `437450`
-- Template hash: `b351cd170c76ca68d8682ffa4af732d0`
-- Template link: [cloud.vast.ai template](https://cloud.vast.ai?ref_id=506182&template_id=b351cd170c76ca68d8682ffa4af732d0)
+- Template hash: `bcf4b4c54f9669d76861e6c9ac633a0f`
+- Template link: [cloud.vast.ai template](https://cloud.vast.ai?ref_id=506182&template_id=bcf4b4c54f9669d76861e6c9ac633a0f)
 - Image: `vastai/pytorch:2.10.0-cu128-cuda-12.9-mini-py312-2026-04-15`
 - Search filter: single RTX 5090, CUDA `>=12.8`, disk `>=100GB`
 
