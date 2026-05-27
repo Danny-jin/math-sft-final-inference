@@ -37,6 +37,7 @@ from vote_eval import vote_all  # noqa: E402
 
 
 DEFAULT_PRIVATE_JSONL = REPO / "data" / "private.jsonl"
+DEFAULT_BASE_MODEL = "Qwen/Qwen3-4B-Thinking-2507"
 DEFAULT_A17_LORA = REPO / "models" / "a17_lora"
 DEFAULT_A17_LORA_HF_REPO = "Danny-jin/math-sft-a17-lora"
 DEFAULT_TARGET_REF = REPO / "artifacts" / "private_all943_codex_A16style_accepted_reference.jsonl"
@@ -279,7 +280,7 @@ def run_inference(
 
     private_path = Path(private_jsonl or _env_path("PRIVATE_JSONL", DEFAULT_PRIVATE_JSONL)).expanduser()
     out_csv = Path(output_csv or _env_path("FINAL_SUBMISSION_CSV", DEFAULT_OUTPUT_CSV)).expanduser()
-    base = base_model or os.environ.get("QWEN_BASE_MODEL", "/workspace/qwen_v2/Qwen3-4B-Thinking")
+    base = base_model or os.environ.get("QWEN_BASE_MODEL", DEFAULT_BASE_MODEL)
     lora = Path(a17_lora or _env_path("A17_LORA_PATH", DEFAULT_A17_LORA)).expanduser()
     lora_repo = a17_lora_repo if a17_lora_repo is not None else os.environ.get("A17_LORA_HF_REPO", DEFAULT_A17_LORA_HF_REPO)
     ref = Path(target_ref or _env_path("CODEX_TARGET_REF", DEFAULT_TARGET_REF)).expanduser()
@@ -390,7 +391,7 @@ def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Run final A17 target-gated inference pipeline.")
     ap.add_argument("--private-jsonl", default=str(DEFAULT_PRIVATE_JSONL))
     ap.add_argument("--output-csv", default=str(DEFAULT_OUTPUT_CSV))
-    ap.add_argument("--base-model", default=os.environ.get("QWEN_BASE_MODEL", "/workspace/qwen_v2/Qwen3-4B-Thinking"))
+    ap.add_argument("--base-model", default=os.environ.get("QWEN_BASE_MODEL", DEFAULT_BASE_MODEL))
     ap.add_argument("--a17-lora", default=str(DEFAULT_A17_LORA))
     ap.add_argument("--a17-lora-repo", default=os.environ.get("A17_LORA_HF_REPO", DEFAULT_A17_LORA_HF_REPO))
     ap.add_argument("--target-ref", default=str(DEFAULT_TARGET_REF))

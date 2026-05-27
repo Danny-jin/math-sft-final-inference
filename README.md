@@ -44,10 +44,17 @@ This repo does not commit model weights. The final A17 LoRA adapter is loaded
 from HuggingFace Hub, or from a local directory if it has already been
 downloaded.
 
-Place the designated Qwen base model somewhere local and point `QWEN_BASE_MODEL` to it:
+By default, `run_inference()` loads the designated base model from HuggingFace:
+
+```text
+Qwen/Qwen3-4B-Thinking-2507
+```
+
+If you have already downloaded the base model locally, point `QWEN_BASE_MODEL`
+to that local directory:
 
 ```bash
-export QWEN_BASE_MODEL=/workspace/qwen_v2/Qwen3-4B-Thinking
+export QWEN_BASE_MODEL=/path/to/Qwen3-4B-Thinking-2507
 ```
 
 The code is configured to download the final A17 LoRA adapter from:
@@ -147,7 +154,7 @@ To override paths:
 ```bash
 python run_inference.py \
   --private-jsonl /path/to/private.jsonl \
-  --base-model /path/to/Qwen3-4B-Thinking \
+  --base-model Qwen/Qwen3-4B-Thinking-2507 \
   --a17-lora /path/to/a17_lora \
   --target-ref artifacts/private_all943_codex_A16style_accepted_reference.jsonl \
   --output-csv outputs/final_submission.csv

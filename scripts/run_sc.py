@@ -43,7 +43,7 @@ def main():
                     help="JSONL with rows {id, question, options?, answer?}")
     ap.add_argument("--output", required=True,
                     help="Output JSONL with k samples per row.")
-    ap.add_argument("--model",  default="/workspace/qwen_v2/Qwen3-4B-Thinking",
+    ap.add_argument("--model",  default="Qwen/Qwen3-4B-Thinking-2507",
                     help="Local base model directory or HuggingFace model id.")
     ap.add_argument("--lora-path", default=None,
                     help="Optional LoRA adapter directory.")

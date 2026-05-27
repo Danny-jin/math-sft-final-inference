@@ -39,7 +39,7 @@ def main():
     ap.add_argument("--input",  required=True)
     ap.add_argument("--output", required=True)
     ap.add_argument("--lora",   default=None)
-    ap.add_argument("--base",   default="/workspace/qwen_v2/Qwen3-4B-Thinking")
+    ap.add_argument("--base",   default="Qwen/Qwen3-4B-Thinking-2507")
     ap.add_argument("--max_tokens",   type=int, default=24576)
     ap.add_argument("--max_model_len", type=int, default=32768)
     ap.add_argument("--max_lora_rank", type=int, default=16)
