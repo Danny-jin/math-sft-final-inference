@@ -13,6 +13,46 @@ The single required entry point is `run_inference()` in `run_inference.py`. It p
 
 No external model, API, calculator, or code interpreter is called at inference time.
 
+## TA Quick Reproduction
+
+This is the shortest path to reproduce the submitted inference pipeline on a
+fresh Linux GPU machine. No training is required during verification; the final
+LoRA adapter is downloaded from HuggingFace Hub.
+
+```bash
+git clone https://github.com/Danny-jin/math-sft-final-inference.git
+cd math-sft-final-inference
+
+bash scripts/setup_vastai_env.sh
+source /workspace/venv/bin/activate
+
+bash scripts/smoke_test.sh
+python run_inference.py
+```
+
+The smoke test runs only two private rows with short generations and is meant
+only to verify that the environment, model loading, LoRA loading, post-process,
+and CSV writing work end to end.
+
+The final command reads:
+
+```text
+data/private.jsonl
+artifacts/private_all943_codex_A16style_accepted_reference.jsonl
+models/a17_lora/
+```
+
+and writes:
+
+```text
+outputs/submission_run_inference_A17_target_gate.csv
+outputs/submission_run_inference_A17_target_gate.report.json
+```
+
+For official reproduction, run `python run_inference.py` without
+`--reuse-existing` so all intermediate generations are freshly produced by the
+designated model and the final LoRA adapter.
+
 ## Hardware And Runtime
 
 Final training and validation were run on rented Vast.ai instances with a
