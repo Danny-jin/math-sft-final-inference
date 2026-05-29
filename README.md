@@ -42,7 +42,8 @@ cd /workspace/math-sft-final-inference
 source /workspace/venv/bin/activate
 
 bash scripts/smoke_test.sh
-python run_inference.py
+bash scripts/run_final_background.sh
+tail -f outputs/final_run.log
 ```
 
 From a manually prepared machine with writable `/workspace`:
@@ -55,12 +56,14 @@ bash scripts/setup_vastai_env.sh
 source /workspace/venv/bin/activate
 
 bash scripts/smoke_test.sh
-python run_inference.py
+bash scripts/run_final_background.sh
+tail -f outputs/final_run.log
 ```
 
 On a machine without `/workspace`, create an equivalent Python environment,
 install `requirements.txt`, place or download the A17 adapter, and call
-`python run_inference.py` from the repository root.
+`python run_inference.py` from the repository root, or run
+`bash scripts/run_final_background.sh` if `tmux`/`nohup` is available.
 
 The smoke test runs two private rows with short generations. It is only a cheap
 end-to-end environment check, not an accuracy check.
@@ -74,6 +77,31 @@ outputs/submission_run_inference_A17_target_gate.report.json
 
 For official reproduction, run without `--reuse-existing` so all intermediate
 generations are freshly produced.
+
+The background wrapper launches the same `run_inference.py` pipeline in a
+detached `tmux` session named `final_run` when `tmux` is installed. If `tmux` is
+not available, it falls back to `nohup`. It writes progress to:
+
+```text
+outputs/final_run.log
+```
+
+Useful background commands:
+
+```bash
+# Start the final run and safely disconnect SSH.
+bash scripts/run_final_background.sh
+
+# Watch progress.
+tail -f outputs/final_run.log
+
+# Reattach if tmux is used.
+tmux attach -t final_run
+
+# Pass CLI overrides to run_inference.py.
+RUN_INFERENCE_ARGS="--output-csv outputs/final_submission.csv" \
+  bash scripts/run_final_background.sh
+```
 
 Python entry-point usage:
 
@@ -218,16 +246,16 @@ driver library path `/usr/lib/x86_64-linux-gnu` over CUDA compat stubs to avoid
 To keep the final run alive:
 
 ```bash
-tmux new -s final
 cd /workspace/math-sft-final-inference
 source /workspace/venv/bin/activate
-python run_inference.py 2>&1 | tee outputs/final_run.log
+bash scripts/run_final_background.sh
+tail -f outputs/final_run.log
 ```
 
-Detach with `Ctrl-b d`; reconnect with:
+If using the `tmux` backend, reconnect with:
 
 ```bash
-tmux attach -t final
+tmux attach -t final_run
 ```
 
 ## File Map
@@ -235,6 +263,7 @@ tmux attach -t final
 - `run_inference.py`: required single entry point and CLI.
 - `scripts/setup_vastai_env.sh`: tested dependency setup for the Vast.ai image.
 - `scripts/smoke_test.sh`: cheap two-row end-to-end test.
+- `scripts/run_final_background.sh`: detached final run wrapper using `tmux` or `nohup`.
 - `scripts/run_sc.py`: base self-consistency generation.
 - `scripts/run_inference_lora_hiprec.py`: A17 LoRA generation.
 - `scripts/vote_eval.py`: self-consistency voting.

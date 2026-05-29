@@ -84,7 +84,11 @@ bash scripts/smoke_test.sh
 Final run:
 
 cd $REPO_DIR
-python run_inference.py
+bash scripts/run_final_background.sh
+
+Follow progress:
+
+tail -f outputs/final_run.log
 EOF
 
 rm -f /workspace/SETUP_FINAL_INFERENCE_RUNNING
