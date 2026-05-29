@@ -15,6 +15,8 @@ mkdir -p "$HF_HOME" "$HUGGINGFACE_HUB_CACHE" "$VLLM_CACHE_ROOT" "$TORCHINDUCTOR_
 
 echo "[setup] repo: $REPO_DIR"
 echo "[setup] venv: $VENV_DIR"
+touch /workspace/SETUP_FINAL_INFERENCE_RUNNING
+trap 'rm -f /workspace/SETUP_FINAL_INFERENCE_RUNNING' EXIT
 echo "[setup] creating/updating virtualenv"
 python3 -m venv "$VENV_DIR"
 
@@ -85,4 +87,5 @@ cd $REPO_DIR
 python run_inference.py
 EOF
 
+rm -f /workspace/SETUP_FINAL_INFERENCE_RUNNING
 echo "[setup] ready: /workspace/READY_FINAL_INFERENCE.txt"

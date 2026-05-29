@@ -21,6 +21,19 @@ SMOKE_OUTPUT_CSV="${SMOKE_OUTPUT_CSV:-outputs/smoke/submission_smoke.csv}"
 
 echo "[smoke] repo: $(pwd)"
 
+if [ -e /workspace/SETUP_FINAL_INFERENCE_RUNNING ] || pgrep -f "scripts/setup_vastai_env.sh" >/dev/null 2>&1; then
+  echo "[smoke] setup is still running; waiting for /workspace/READY_FINAL_INFERENCE.txt ..."
+  for _ in $(seq 1 180); do
+    if [ -s /workspace/READY_FINAL_INFERENCE.txt ]; then
+      break
+    fi
+    if ! pgrep -f "scripts/setup_vastai_env.sh" >/dev/null 2>&1 && [ ! -e /workspace/SETUP_FINAL_INFERENCE_RUNNING ]; then
+      break
+    fi
+    sleep 10
+  done
+fi
+
 if [ -z "${PYTHON:-}" ] && [ -x /workspace/venv/bin/python ]; then
   PYTHON=/workspace/venv/bin/python
 fi
@@ -28,6 +41,21 @@ PYTHON="${PYTHON:-python}"
 
 echo "[smoke] python: $("$PYTHON" -V 2>&1)"
 nvidia-smi || true
+
+if ! "$PYTHON" - <<'PY' >/dev/null 2>&1
+import huggingface_hub
+import transformers
+import vllm
+import peft
+PY
+then
+  echo "[smoke] runtime dependencies are missing or incomplete; running setup_vastai_env.sh ..."
+  bash scripts/setup_vastai_env.sh
+  if [ -x /workspace/venv/bin/python ]; then
+    PYTHON=/workspace/venv/bin/python
+  fi
+  echo "[smoke] python after setup: $("$PYTHON" -V 2>&1)"
+fi
 
 test -s data/private.jsonl
 test -s artifacts/private_all943_codex_A16style_accepted_reference.jsonl
