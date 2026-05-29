@@ -176,7 +176,7 @@ def _write_voted_outputs(
     base_csv: Path,
     normalize: bool = True,
 ) -> dict[int, str]:
-    voted = vote_all(sc_jsonl)
+    voted = vote_all(sc_jsonl, preserve_trace=True)
     response_by_id: dict[int, str] = {}
     voted_rows: list[dict[str, Any]] = []
     base_csv.parent.mkdir(parents=True, exist_ok=True)

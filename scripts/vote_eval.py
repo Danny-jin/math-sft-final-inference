@@ -6,8 +6,10 @@ key from SymPy parse_latex when convertible. Two answers match if their key
 sets intersect (any one key in common).
 
 `vote_all(sc_jsonl_path)` reads {id, type, samples=[k strings]} rows and
-returns dict {id: voted_response_string}. The voted string is wrapped with
-`\\boxed{...}` so downstream CSV writing can store a single final answer.
+returns dict {id: voted_response_string}. By default the voted string is
+wrapped with `\\boxed{...}` so downstream CSV writing can store a single final
+answer. With `preserve_trace=True`, the same voted answer is inserted into a
+representative raw sample so the response keeps a full model reasoning trace.
 
 Voting strategy:
   - MCQ: extract letter from each sample, take majority.
@@ -23,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "..", "judger"))
 from postprocess import (extract_mcq_answer, extract_ff_merged,
                           split_ff_multi, strip_units)
+from answer_normalization import extract_box, replace_box
 
 
 # ─── canon_ff_v2 ───────────────────────────────────────────────────────
@@ -234,11 +237,83 @@ def vote_one(samples: list[str], qtype: str) -> str:
     return f"\\boxed{{{ans}}}"
 
 
-def vote_all(sc_input) -> dict:
+def _append_or_replace_box(sample: str, voted_box: str) -> str:
+    """Keep a sample's reasoning trace but force its final boxed answer."""
+    if not sample:
+        return f"\\boxed{{{voted_box}}}"
+    if extract_box(sample) is not None:
+        return replace_box(sample, voted_box)
+    return sample.rstrip() + "\n\n" + f"\\boxed{{{voted_box}}}"
+
+
+def _split_answer(ans: str) -> list[str]:
+    return split_ff_multi(strip_units(ans)) or [strip_units(ans).strip()]
+
+
+def _same_ff_answer(a: str | None, b: str | None) -> bool:
+    if a is None or b is None:
+        return False
+    a = strip_units(a).strip()
+    b = strip_units(b).strip()
+    if a == b:
+        return True
+    a_parts = _split_answer(a)
+    b_parts = _split_answer(b)
+    if len(a_parts) != len(b_parts):
+        return False
+    for left, right in zip(a_parts, b_parts):
+        if left.strip() == right.strip():
+            continue
+        if not (canon_ff_v2(left) & canon_ff_v2(right)):
+            return False
+    return True
+
+
+def _representative_trace(samples: list[str], qtype: str, voted_box: str) -> str:
+    """Choose the raw sample whose reasoning should carry the voted answer.
+
+    Prefer a sample whose own final answer already matches the voted answer.
+    Per-slot voting can synthesize a box no single sample produced; in that
+    case use the first answer-bearing sample and replace only its final box.
+    """
+    nonempty = [s for s in samples if isinstance(s, str) and s.strip()]
+    if not nonempty:
+        return f"\\boxed{{{voted_box}}}"
+
+    if qtype == "mcq":
+        for sample in nonempty:
+            if extract_mcq_answer(sample) == voted_box:
+                return _append_or_replace_box(sample, voted_box)
+        return _append_or_replace_box(nonempty[0], voted_box)
+
+    for sample in nonempty:
+        if _same_ff_answer(extract_ff_merged(sample), voted_box):
+            return _append_or_replace_box(sample, voted_box)
+
+    for sample in nonempty:
+        if extract_ff_merged(sample) is not None or extract_box(sample) is not None:
+            return _append_or_replace_box(sample, voted_box)
+    return _append_or_replace_box(nonempty[0], voted_box)
+
+
+def vote_one_with_trace(samples: list[str], qtype: str) -> str:
+    """Vote across k samples, preserving a representative reasoning trace."""
+    voted = vote_one(samples, qtype)
+    voted_box = extract_box(voted)
+    if voted_box is None:
+        return voted
+    return _representative_trace(samples, qtype, voted_box)
+
+
+def vote_all(sc_input, preserve_trace: bool = False) -> dict:
     """Read SC inference output and produce {id: voted_response_string}.
 
     Accepts either a path to a JSONL file (one {id,type,samples} per line)
     or an in-memory list of such row dicts.
+
+    If preserve_trace is true, the final answer is still selected by the same
+    voting logic, but the returned response keeps one raw sample's reasoning
+    trace with its final box replaced by the voted box.
     """
     if isinstance(sc_input, (list, tuple)):
         rows = sc_input
@@ -250,7 +325,10 @@ def vote_all(sc_input) -> dict:
         qid = row["id"]
         qtype = row.get("type") or "ff"
         samples = row.get("samples") or []
-        out[qid] = vote_one(samples, qtype)
+        if preserve_trace:
+            out[qid] = vote_one_with_trace(samples, qtype)
+        else:
+            out[qid] = vote_one(samples, qtype)
     return out
 
 
